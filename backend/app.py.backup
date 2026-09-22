@@ -1,0 +1,92 @@
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+import tensorflow as tf
+import numpy as np
+from PIL import Image
+import json
+import os
+
+app = Flask(__name__)
+CORS(app)
+
+# -----------------------------
+# Load model
+# -----------------------------
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH = os.path.join(BASE_DIR, "models", "mobilenetv2_soil.keras")
+CLASS_PATH = os.path.join(BASE_DIR, "config", "soil_classes.json")
+
+model = tf.keras.models.load_model(MODEL_PATH)
+
+with open(CLASS_PATH, "r") as f:
+    class_names = json.load(f)
+
+print("MobileNetV2 model loaded successfully!")
+print("Classes:", class_names)
+
+# -----------------------------
+# Soil image prediction
+# -----------------------------
+@app.route("/soil/analyze", methods=["POST"])
+def analyze_soil():
+
+    if "image" not in request.files:
+        return jsonify({
+            "error": "No image uploaded"
+        }), 400
+
+    file = request.files["image"]
+    
+
+    try:
+        # Open image
+        image = Image.open(file).convert("RGB")
+
+        # Resize exactly as during training
+        image = image.resize((224, 224))
+
+        # Convert to NumPy
+        image_array = np.array(image)
+
+        # Normalize
+        image_array = image_array.astype("float32") / 255.0
+
+        # Add batch dimension
+        image_array = np.expand_dims(image_array, axis=0)
+
+        # Prediction
+        predictions = model.predict(image_array, verbose=0)
+
+        predicted_index = int(np.argmax(predictions[0]))
+        confidence = float(predictions[0][predicted_index])
+
+        predicted_class = class_names[predicted_index]
+
+        return jsonify({
+            "soil_type": predicted_class,
+            "confidence": confidence
+        })
+
+    except Exception as e:
+        return jsonify({
+            "error": str(e)
+        }), 500
+
+# -----------------------------
+# Health check
+# -----------------------------
+@app.route("/", methods=["GET"])
+def home():
+    return jsonify({
+        "message": "Crop Recommendation Backend is running!"
+    })
+
+# -----------------------------
+# Run server
+# -----------------------------
+if __name__ == "__main__":
+    app.run(
+        host="0.0.0.0",
+        port=5000,
+        debug=True
+    )

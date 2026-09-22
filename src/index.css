@@ -1,0 +1,3 @@
+html { scroll-behavior: smooth; }
+button, input, select, textarea { font: inherit; }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid #b4d37c; outline-offset: 3px; }
