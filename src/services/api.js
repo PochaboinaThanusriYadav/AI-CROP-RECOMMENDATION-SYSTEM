@@ -21,9 +21,15 @@ export function recommendCrop(data) {
     district: data.location?.district,
     mandal: data.location?.mandal,
     season: data.farmer?.season || 'Kharif',
+    land_type: data.farmer?.soilType,
+    irrigation: data.farmer?.irrigation,
+    water: data.farmer?.water,
+    previous_crop: data.farmer?.previousCrop,
+    land_area: data.farmer?.area,
+    crop_duration: data.farmer?.duration,
   }
 
-  return request('/recommendation', {
+  return request('/questionnaire/recommendation', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),

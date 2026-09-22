@@ -7,6 +7,7 @@ import json
 import os
 import requests
 from crop_recommender import recommend_crops
+from questionnaire_recommender import recommend_questionnaire
 
 app = Flask(__name__)
 CORS(app)
@@ -137,6 +138,34 @@ def recommendation():
             for item in alternatives
         ],
         "recommendations": recommendations
+    })
+
+
+@app.route("/questionnaire/recommendation", methods=["POST"])
+def questionnaire_recommendation():
+    data = request.get_json() or {}
+    try:
+        recommendations = recommend_questionnaire(data)
+    except ValueError as error:
+        return jsonify({"error": str(error)}), 400
+
+    if not recommendations:
+        return jsonify({"error": "No historical crop data found for this location and season"}), 404
+
+    primary = recommendations[0]
+    return jsonify({
+        "recommended_crop": primary["crop"],
+        "score": primary["score"],
+        "confidence": round(primary["score"] / 100, 2),
+        "factors": {
+            "historical_location_score": primary["historical_score"],
+            "irrigation_suitability": primary["irrigation_suitability"],
+            "land_type_suitability": primary["land_type_suitability"],
+            "season_suitability": primary["season_suitability"],
+            "farmer_preference": primary["farmer_preference"],
+        },
+        "alternatives": [item["crop"] for item in recommendations[1:]],
+        "recommendations": recommendations,
     })
 
 @app.route("/weather", methods=["GET"])
