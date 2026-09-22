@@ -11,7 +11,7 @@ const services = [
 const insights = [
   ['01', 'Why soil context matters', 'A practical guide to preparing a soil image for analysis.'],
   ['02', 'Reading your farm signals', 'How location and farmer knowledge strengthen an advisory.'],
-  ['03', 'A more thoughtful planting plan', 'What a backend-ready crop workflow makes possible.'],
+  ['03', 'A more thoughtful planting plan', 'Weather and field signals organized for the next decision.'],
 ]
 
 export default function HomePage() {
@@ -25,7 +25,7 @@ export default function HomePage() {
     <section className="reference-hero">
       <div className="reference-hero-image" role="img" aria-label="Green agricultural field ready for planting">
         <div className="reference-hero-nav"><Link className="reference-logo" to="/"><span><Leaf size={16} /></span> AgriVision</Link><div className="radio-inputs" role="navigation" aria-label="Home page sections">{[['about', 'About'], ['services', 'Solutions'], ['workflow', 'Workflow']].map(([section, label]) => <label className="radio" key={section}><input type="radio" name="home-section" checked={activeSection === section} onChange={() => goToSection(section)} /><span className="name">{label}</span></label>)}</div><Link className="start-analysis-button" to="/analysis" aria-label="Start analysis"><span className="start-analysis-bg" /><span className="start-analysis-wrap"><span className="start-analysis-outline" /><span className="start-analysis-content"><span className="start-analysis-label">Start analysis</span><span className="start-analysis-icon"><span /></span></span></span></Link></div>
-        <div className="reference-hero-copy"><span className="reference-kicker">Backend-ready crop advisory</span><h1>Smart agriculture<br /><em>for a stronger harvest.</em></h1><p>Bring together soil, place and farmer knowledge to make your next crop decision more informed.</p><div className="reference-hero-actions"><Link className="button2" to="/analysis">Explore the workflow</Link><Link className="learn-more" to="/about"><span className="circle" aria-hidden="true"><span className="icon arrow" /></span><span className="button-text">Learn more</span></Link></div></div>
+        <div className="reference-hero-copy"><span className="reference-kicker">Connected crop advisory</span><h1>Smart agriculture<br /><em>for a stronger harvest.</em></h1><p>Bring together soil, place and farmer knowledge to make your next crop decision more informed.</p><div className="reference-hero-actions"><Link className="button2" to="/analysis">Explore the workflow</Link><Link className="learn-more" to="/about"><span className="circle" aria-hidden="true"><span className="icon arrow" /></span><span className="button-text">Learn more</span></Link></div></div>
         <div className="reference-hero-note"><span className="reference-avatar"><Sprout size={15} /></span><span><b>Built for the field</b></span></div>
       </div>
     </section>

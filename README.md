@@ -1,12 +1,47 @@
-# React + Vite
+# AI Crop Recommendation System
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+This project provides three independent crop-advisory pathways:
 
-Currently, two official plugins are available:
+- Soil image classification with the MobileNetV2 model.
+- Location-based recommendations using Telangana historical crop data.
+- Questionnaire recommendations using a transparent weighted scoring algorithm.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Questionnaire Recommendation
 
+The questionnaire algorithm in `backend/questionnaire_recommender.py` uses the selected district, mandal, and season. Its score is composed of:
+
+- 50% historical cultivation score
+- 20% irrigation and water suitability
+- 15% land or soil suitability
+- 10% season suitability
+- 5% farmer preference, including previous crop and duration
+
+The endpoint is `POST /questionnaire/recommendation`.
+
+## Weather And Planting Advisory
+
+`GET /weather` fetches current weather and a four-day forecast from Open-Meteo. The advisor in `backend/planting_advisor.py` evaluates temperature, rainfall, humidity, and wind for each forecast day. `POST /planting-advisory` returns a suitability status, score, recommended days, and reasons.
+
+These are transparent generic weather-suitability rules, not crop-specific agronomic predictions. Copernicus satellite integration and crop-specific thresholds are not implemented.
+
+The Results page keeps questionnaire and GPS/location recommendations separate and displays the weather-based planting advisory when location weather data is available.
+
+## Running Locally
+
+From the project root:
+
+```bash
+npm install
+npm run dev
+```
+
+From `backend/` after installing `backend/requirements.txt`:
+
+```bash
+python app.py
+```
+
+Set `VITE_API_BASE_URL` to the Flask server URL in `.env` before using the frontend API calls.
 ## React Compiler
 
 The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).

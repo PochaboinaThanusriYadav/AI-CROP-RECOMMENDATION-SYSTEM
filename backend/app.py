@@ -7,7 +7,8 @@ import json
 import os
 import requests
 from crop_recommender import recommend_crops
-from questionnaire_recommender import recommend_questionnaire
+from questionnaire_recommender import questionnaire_recommendation
+from planting_advisor import advise_planting
 
 app = Flask(__name__)
 CORS(app)
@@ -23,6 +24,16 @@ model = tf.keras.models.load_model(MODEL_PATH)
 
 with open(CLASS_PATH, "r") as f:
     class_names = json.load(f)
+
+SOIL_CROP_MAP = {
+    "Alluvial_Soil": ["Paddy", "Wheat", "Maize", "Sugarcane"],
+    "Black_Soil": ["Cotton", "Soyabean", "Jowar", "Sunflower"],
+    "Red_Soil": ["Groundnut", "Red Gram", "Green Gram", "Millets"],
+    "Laterite_Soil": ["Cashew", "Coconut", "Groundnut", "Pineapple"],
+    "Arid_Soil": ["Bajra", "Jowar", "Millets", "Groundnut"],
+    "Mountain_Soil": ["Maize", "Potato", "Vegetables", "Pulses"],
+    "Yellow_Soil": ["Groundnut", "Maize", "Pulses", "Millets"],
+}
 
 print("MobileNetV2 model loaded successfully!")
 print("Classes:", class_names)
@@ -64,10 +75,13 @@ def analyze_soil():
         confidence = float(predictions[0][predicted_index])
 
         predicted_class = class_names[predicted_index]
+        recommended_crops = SOIL_CROP_MAP.get(predicted_class, [])
 
         return jsonify({
             "soil_type": predicted_class,
-            "confidence": confidence
+            "confidence": confidence,
+            "recommended_crops": recommended_crops,
+            "message": "These are preliminary crop suggestions based on the detected soil type.",
         })
 
     except Exception as e:
@@ -126,7 +140,8 @@ def recommendation():
 
     return jsonify({
         "recommended_crop": primary["crop"],
-        "confidence": primary["cultivation_share"] / 100,
+        "score": primary["cultivation_share"],
+        "historical_cultivation_share": primary["cultivation_share"],
         "factors": [
             f"Historical cultivation share: {primary['cultivation_share']}%",
             f"Historical actual cultivated area: {primary['historical_actual_area']} acres",
@@ -142,31 +157,37 @@ def recommendation():
 
 
 @app.route("/questionnaire/recommendation", methods=["POST"])
-def questionnaire_recommendation():
+def questionnaire_recommendation_api():
     data = request.get_json() or {}
+    required_fields = ["district", "mandal", "season", "land_type", "irrigation"]
+    missing = [field for field in required_fields if not data.get(field)]
+
+    if missing:
+        return jsonify({
+            "error": "Missing required fields",
+            "fields": missing,
+        }), 400
+
     try:
-        recommendations = recommend_questionnaire(data)
-    except ValueError as error:
-        return jsonify({"error": str(error)}), 400
-
-    if not recommendations:
-        return jsonify({"error": "No historical crop data found for this location and season"}), 404
-
-    primary = recommendations[0]
-    return jsonify({
-        "recommended_crop": primary["crop"],
-        "score": primary["score"],
-        "confidence": round(primary["score"] / 100, 2),
-        "factors": {
-            "historical_location_score": primary["historical_score"],
-            "irrigation_suitability": primary["irrigation_suitability"],
-            "land_type_suitability": primary["land_type_suitability"],
-            "season_suitability": primary["season_suitability"],
-            "farmer_preference": primary["farmer_preference"],
-        },
-        "alternatives": [item["crop"] for item in recommendations[1:]],
-        "recommendations": recommendations,
-    })
+        result = questionnaire_recommendation(
+            district=data["district"],
+            mandal=data["mandal"],
+            season=data["season"],
+            land_type=data["land_type"],
+            irrigation=data["irrigation"],
+            water_source=data.get("water_source"),
+            previous_crop=data.get("previous_crop"),
+            land_area=data.get("land_area"),
+            crop_duration=data.get("crop_duration"),
+            top_n=5,
+        )
+        if result is None:
+            return jsonify({
+                "error": "No suitable crop data found for the given location and season."
+            }), 404
+        return jsonify(result)
+    except Exception as error:
+        return jsonify({"error": str(error)}), 500
 
 @app.route("/weather", methods=["GET"])
 def weather():
@@ -202,6 +223,25 @@ def weather():
             "error": "Unable to fetch weather data",
             "details": str(e)
         }), 500
+
+
+@app.route("/planting-advisory", methods=["POST"])
+def planting_advisory():
+    data = request.get_json() or {}
+    crop = data.get("crop")
+    weather_data = data.get("weather")
+
+    if not crop or not isinstance(weather_data, dict):
+        return jsonify({
+            "error": "Crop and weather data are required"
+        }), 400
+
+    try:
+        return jsonify(advise_planting(crop, weather_data))
+    except ValueError as error:
+        return jsonify({"error": str(error)}), 400
+    except Exception as error:
+        return jsonify({"error": str(error)}), 500
 
 # -----------------------------
 # Run server

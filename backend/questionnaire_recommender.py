@@ -127,3 +127,45 @@ def recommend_questionnaire(data, top_n=5):
         })
 
     return sorted(recommendations, key=lambda item: item["score"], reverse=True)[:top_n]
+
+
+def questionnaire_recommendation(
+    district,
+    mandal,
+    season,
+    land_type,
+    irrigation,
+    water_source=None,
+    previous_crop=None,
+    land_area=None,
+    crop_duration=None,
+    top_n=5,
+):
+    return _recommendation_response(
+        recommend_questionnaire(
+            {
+                "district": district,
+                "mandal": mandal,
+                "season": season,
+                "land_type": land_type,
+                "irrigation": irrigation,
+                "water": water_source,
+                "previous_crop": previous_crop,
+                "land_area": land_area,
+                "crop_duration": crop_duration,
+            },
+            top_n=top_n,
+        )
+    )
+
+
+def _recommendation_response(recommendations):
+    if not recommendations:
+        return None
+    primary = recommendations[0]
+    return {
+        "recommended_crop": primary["crop"],
+        "score": primary["score"],
+        "alternatives": [item["crop"] for item in recommendations[1:]],
+        "recommendations": recommendations,
+    }
